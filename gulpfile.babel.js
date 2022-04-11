@@ -1,5 +1,5 @@
 // imports
-import { dest, parallel, series, src, watch } from "gulp";
+import { dest, lastRun, parallel, series, src, watch } from "gulp";
 import dartSass from "sass";
 import gulpSass from "gulp-sass";
 import autoprefixer from "autoprefixer";
@@ -12,6 +12,7 @@ import babel from "gulp-babel";
 import server from "gulp-webserver";
 import cssnano from "cssnano";
 import browserSync from "browser-sync";
+import squoosh from "gulp-libsquoosh";
 
 // File path variables etc.
 const dev_url = "yourlocal.dev";
@@ -24,6 +25,10 @@ const files = {
   jsPath: {
     src: "src/js/**/*.js",
     dest: "dist/js",
+  },
+  imgPath: {
+    src: "src/img/**/*.{jpg,jpeg,png,svg}",
+    dest: "dist/img",
   },
 };
 
@@ -114,6 +119,13 @@ const webserverTask = () => {
   );
 };
 
+// Images Task
+const imagesTask = () => {
+  return src(files.imgPath.src, { since: lastRun(imagesTask) })
+    .pipe(squoosh())
+    .pipe(dest(files.imgPath.dest));
+};
+
 // Watch Task
 const watchTask = () => {
   watch([files.scssPath.src, files.jsPath.src], parallel(scssTask, jsTask));
@@ -123,6 +135,7 @@ const watchTask = () => {
 exports.default = series(
   parallel(scssTask, jsTask),
   cashbustTask,
+  imagesTask,
   webserverTask,
   watchTask
 );
@@ -130,6 +143,7 @@ exports.default = series(
 exports.bs = series(
   parallel(scssTask, jsTask),
   cashbustTask,
+  imagesTask,
   browserSyncServe,
   bsWatchTask
 );
