@@ -4,7 +4,8 @@
   "description": "",
   "exports": "./index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "watch": "gulp",
+    "bs": "gulp bs"
   },
   "browserslist": [
     "last 2 versions"
