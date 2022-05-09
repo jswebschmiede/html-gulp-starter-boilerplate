@@ -16,6 +16,8 @@ import through from "through2";
 import named from "vinyl-named";
 import webpack from "webpack";
 import mode from "gulp-mode";
+import cached from "gulp-cached";
+import remember from "gulp-remember";
 
 // File path variables etc.c
 const gulpMode = mode({
@@ -67,8 +69,10 @@ const browserSyncReload = (cb) => {
 const scssTask = () => {
   return src(files.scssPath.src)
     .pipe(gulpMode.development(sourcemaps.init()))
+    .pipe(cached("scss"))
     .pipe(sass({ includePaths: ["./node_modules"] }).on("error", sass.logError))
     .pipe(postcss([autoprefixer(), cssnano(), tailwindcss()]))
+    .pipe(remember("scss"))
     .pipe(gulpMode.development(sourcemaps.write(".")))
     .pipe(dest(files.scssPath.dest));
 };
@@ -108,7 +112,9 @@ const jsTask = () => {
 
 // moveWebfontsToDist Task
 const moveWebfontsToDist = () => {
-  return src(["src/webfonts/**"]).pipe(dest("dist/webfonts"));
+  return src(["src/webfonts/**"], { since: lastRun(moveWebfontsToDist) }).pipe(
+    dest("dist/webfonts")
+  );
 };
 
 // Browsersync Watch task
@@ -143,8 +149,7 @@ const watchTask = () => {
 exports.default = series(
   cleanDist,
   parallel(scssTask, jsTask),
-  moveWebfontsToDist,
-  imagesTask,
+  parallel(moveWebfontsToDist, imagesTask),
   watchTask
 );
 
@@ -152,16 +157,14 @@ exports.default = series(
 exports.build = series(
   cleanDist,
   parallel(scssTask, jsTask),
-  moveWebfontsToDist,
-  imagesTask
+  parallel(moveWebfontsToDist, imagesTask)
 );
 
 // Browsersync Task
 exports.bs = series(
   cleanDist,
   parallel(scssTask, jsTask),
-  moveWebfontsToDist,
-  imagesTask,
+  parallel(moveWebfontsToDist, imagesTask),
   browserSyncServe,
   bsWatchTask
 );
