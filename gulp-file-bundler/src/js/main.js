@@ -10,3 +10,6 @@ function test() {
 const test2 = () => {
   console.log("Hello ECMA 6");
 };
+
+test();
+test2();

@@ -6,16 +6,15 @@ import gulpSass from "gulp-sass";
 import autoprefixer from "autoprefixer";
 import sourcemaps from "gulp-sourcemaps";
 import postcss from "gulp-postcss";
-import concat from "gulp-concat";
 import terser from "gulp-terser";
-import babel from "gulp-babel";
-import server from "gulp-webserver";
 import cssnano from "cssnano";
 import tailwindcss from "tailwindcss";
 import browserSync from "browser-sync";
 import squoosh from "gulp-libsquoosh";
-import fileinclude from "gulp-file-include";
-// import rev from "gulp-rev";
+import webpackstream from "webpack-stream";
+import through from "through2";
+import named from "vinyl-named";
+import webpack from "webpack";
 
 // File path variables etc.
 const dev_url = "yourlocal.dev";
@@ -26,7 +25,7 @@ const files = {
     dest: "dist/css",
   },
   jsPath: {
-    src: "src/js/**/*.js",
+    src: "src/js/main.js",
     dest: "dist/js",
   },
   imgPath: {
@@ -68,32 +67,37 @@ const scssTask = () => {
     .pipe(dest(files.scssPath.dest));
 };
 
-// JS Task
 const jsTask = () => {
   return src(files.jsPath.src)
-    .pipe(sourcemaps.init())
-    .pipe(concat("main.bundle.js"))
+    .pipe(named())
     .pipe(
-      babel({
-        presets: ["@babel/env"],
+      webpackstream({
+        mode: "development",
+        output: {
+          filename: "[name].bundle.js",
+        },
+        devtool: "source-map",
+        plugins: [
+          new webpack.ProvidePlugin({
+            $: "jquery",
+            jQuery: "jquery",
+          }),
+        ],
+      })
+    )
+    .pipe(sourcemaps.init({ loadMaps: true }))
+    .pipe(
+      through.obj(function (file, enc, cb) {
+        // Dont pipe through any source map files as it will be handled
+        // by gulp-sourcemaps
+        const isSourceMap = /\.map$/.test(file.path);
+        if (!isSourceMap) this.push(file);
+        cb();
       })
     )
     .pipe(terser())
     .pipe(sourcemaps.write("."))
     .pipe(dest(files.jsPath.dest));
-};
-
-// moveHtmlToDist Task
-const moveHtmlToDist = () => {
-//   return src(["src/*.html"]).pipe(dest("dist"));
-  return src(["src/*.html"])
-    .pipe(
-      fileinclude({
-        prefix: "@@",
-        basepath: "@file",
-      })
-    )
-    .pipe(dest("dist"));
 };
 
 // moveWebfontsToDist Task
@@ -105,35 +109,10 @@ const moveWebfontsToDist = () => {
 // Watch HTML file for change and reload browsersync server
 // watch SCSS and JS files for changes, run scss and js tasks simultaneously and update browsersync
 const bsWatchTask = () => {
-  watch("src/*.html", browserSyncReload);
   watch(
     [files.scssPath.src, files.jsPath.src],
     { interval: 1000, usePolling: true }, //Makes docker work
-    series(
-      parallel(scssTask, jsTask),
-      moveHtmlToDist,
-      moveWebfontsToDist,
-      browserSyncReload
-    )
-  );
-};
-
-// Webserver Task (default)
-const webserverTask = () => {
-  return src("dist").pipe(
-    server({
-      livereload: true,
-      open: true,
-      port: 3030,
-      filter: function (fileName) {
-        // exclude all source maps from livereload
-        if (fileName.match(/.map$/)) {
-          return false;
-        } else {
-          return true;
-        }
-      },
-    })
+    series(parallel(scssTask, jsTask), moveWebfontsToDist, browserSyncReload)
   );
 };
 
@@ -158,10 +137,8 @@ const watchTask = () => {
 exports.default = series(
   cleanDist,
   parallel(scssTask, jsTask),
-  moveHtmlToDist,
   moveWebfontsToDist,
   imagesTask,
-  webserverTask,
   watchTask
 );
 
@@ -169,7 +146,6 @@ exports.default = series(
 exports.bs = series(
   cleanDist,
   parallel(scssTask, jsTask),
-  moveHtmlToDist,
   moveWebfontsToDist,
   imagesTask,
   browserSyncServe,
