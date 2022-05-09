@@ -148,6 +148,14 @@ exports.default = series(
   watchTask
 );
 
+// Build Task
+exports.build = series(
+  cleanDist,
+  parallel(scssTask, jsTask),
+  moveWebfontsToDist,
+  imagesTask
+);
+
 // Browsersync Task
 exports.bs = series(
   cleanDist,

@@ -5,7 +5,7 @@
   "exports": "./index.js",
   "scripts": {
     "watch": "gulp --development",
-    "build": "gulp --production",
+    "build": "gulp build --production",
     "bs": "gulp bs --development",
     "clean": "gulp clean"
   },
