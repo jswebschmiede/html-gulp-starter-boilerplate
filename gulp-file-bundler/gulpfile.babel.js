@@ -124,7 +124,7 @@ const bsWatchTask = () => {
   watch(
     [files.scssPath.src, files.jsPath.src],
     { interval: 1000, usePolling: true }, //Makes docker work
-    series(parallel(scssTask, jsTask), moveWebfontsToDist, browserSyncReload)
+    series(parallel(scssTask, jsTask), browserSyncReload)
   );
 };
 
