@@ -130,8 +130,8 @@ const imagesTask = () => {
 };
 
 // Clean dist task
-const cleanDist = () => {
-  return del(["dist/**/*"]);
+const cleanDist = (cb) => {
+  return del(["dist/**/*"], cb);
 };
 
 // Watch Task
