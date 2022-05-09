@@ -15,8 +15,14 @@ import webpackstream from "webpack-stream";
 import through from "through2";
 import named from "vinyl-named";
 import webpack from "webpack";
+import mode from "gulp-mode";
 
-// File path variables etc.
+// File path variables etc.c
+const gulpMode = mode({
+  modes: ["production", "development"],
+  default: "development",
+  verbose: false,
+});
 const dev_url = "yourlocal.dev";
 const sass = gulpSass(dartSass);
 const files = {
@@ -60,10 +66,10 @@ const browserSyncReload = (cb) => {
 // Sass Task
 const scssTask = () => {
   return src(files.scssPath.src)
-    .pipe(sourcemaps.init())
+    .pipe(gulpMode.development(sourcemaps.init()))
     .pipe(sass({ includePaths: ["./node_modules"] }).on("error", sass.logError))
     .pipe(postcss([autoprefixer(), cssnano(), tailwindcss()]))
-    .pipe(sourcemaps.write("."))
+    .pipe(gulpMode.development(sourcemaps.write(".")))
     .pipe(dest(files.scssPath.dest));
 };
 
@@ -72,7 +78,7 @@ const jsTask = () => {
     .pipe(named())
     .pipe(
       webpackstream({
-        mode: "development",
+        mode: gulpMode.development() ? "development" : "production",
         output: {
           filename: "[name].bundle.js",
         },
@@ -85,7 +91,7 @@ const jsTask = () => {
         ],
       })
     )
-    .pipe(sourcemaps.init({ loadMaps: true }))
+    .pipe(gulpMode.development(sourcemaps.init({ loadMaps: true })))
     .pipe(
       through.obj(function (file, enc, cb) {
         // Dont pipe through any source map files as it will be handled
@@ -95,8 +101,8 @@ const jsTask = () => {
         cb();
       })
     )
-    .pipe(terser())
-    .pipe(sourcemaps.write("."))
+    .pipe(gulpMode.production(terser()))
+    .pipe(gulpMode.development(sourcemaps.write(".")))
     .pipe(dest(files.jsPath.dest));
 };
 
@@ -119,7 +125,7 @@ const bsWatchTask = () => {
 // Images Task
 const imagesTask = () => {
   return src(files.imgPath.src, { since: lastRun(imagesTask) })
-    .pipe(squoosh())
+    .pipe(gulpMode.production(squoosh()))
     .pipe(dest(files.imgPath.dest));
 };
 
