@@ -1,6 +1,7 @@
 // imports
 import { dest, lastRun, parallel, series, src, watch } from "gulp";
 import del from "del";
+import path from "path";
 import dartSass from "sass";
 import gulpSass from "gulp-sass";
 import autoprefixer from "autoprefixer";
@@ -85,6 +86,10 @@ const jsTask = () => {
         mode: gulpMode.development() ? "development" : "production",
         output: {
           filename: "[name].bundle.js",
+        },
+        cache: {
+          type: "filesystem",
+          cacheDirectory: path.resolve(__dirname, ".temp_cache"),
         },
         devtool: "source-map",
         plugins: [
