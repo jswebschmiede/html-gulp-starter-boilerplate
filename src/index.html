@@ -7,14 +7,17 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Document</title>
 
-        <script src="./dist/js/main.bundle.js?cb=1649708438046" defer></script>
-        <link rel="stylesheet" href="./dist/css/main.css?cb=1649708438046">
+        <script src="js/main.bundle.js" defer></script>
+        <link rel="stylesheet" href="css/main.css">
     </head>
 
-    <body>
+    <body class="bg-white text-slate-800">
         <main>
-            <h1>Hello Gulp</h1>
+            <h1 class="text-2xl font-bold">Hello Gulp</h1>
             <p>Lorem Ipsum and so on</p>
+            <h2><i class="fa-solid fa-info text-lg"></i> Tip: Check your console</h2>
+
+            @@include('./partials/view.html')
         </main>
     </body>
 

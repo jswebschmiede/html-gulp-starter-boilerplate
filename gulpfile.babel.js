@@ -1,18 +1,21 @@
 // imports
 import { dest, lastRun, parallel, series, src, watch } from "gulp";
+import del from "del";
 import dartSass from "sass";
 import gulpSass from "gulp-sass";
 import autoprefixer from "autoprefixer";
 import sourcemaps from "gulp-sourcemaps";
 import postcss from "gulp-postcss";
-import replace from "gulp-replace";
 import concat from "gulp-concat";
 import terser from "gulp-terser";
 import babel from "gulp-babel";
 import server from "gulp-webserver";
 import cssnano from "cssnano";
+import tailwindcss from "tailwindcss";
 import browserSync from "browser-sync";
 import squoosh from "gulp-libsquoosh";
+import fileinclude from "gulp-file-include";
+// import rev from "gulp-rev";
 
 // File path variables etc.
 const dev_url = "yourlocal.dev";
@@ -37,7 +40,7 @@ const browserSyncServe = (cb) => {
   // initializes browsersync server
   browserSync.init({
     server: {
-      baseDir: "./src",
+      baseDir: "./dist",
       // proxy: dev_url,
     },
     notify: {
@@ -60,7 +63,7 @@ const scssTask = () => {
   return src(files.scssPath.src)
     .pipe(sourcemaps.init())
     .pipe(sass({ includePaths: ["./node_modules"] }).on("error", sass.logError))
-    .pipe(postcss([autoprefixer(), cssnano()]))
+    .pipe(postcss([autoprefixer(), cssnano(), tailwindcss()]))
     .pipe(sourcemaps.write("."))
     .pipe(dest(files.scssPath.dest));
 };
@@ -80,23 +83,38 @@ const jsTask = () => {
     .pipe(dest(files.jsPath.dest));
 };
 
-// Cashbusting Task
-const cashbustTask = () => {
-  const cbString = new Date().getTime();
-  return src(["src/index.html"])
-    .pipe(replace(/cb=\d+/g, "cb=" + cbString))
+// moveHtmlToDist Task
+const moveHtmlToDist = () => {
+//   return src(["src/*.html"]).pipe(dest("dist"));
+  return src(["src/*.html"])
+    .pipe(
+      fileinclude({
+        prefix: "@@",
+        basepath: "@file",
+      })
+    )
     .pipe(dest("dist"));
+};
+
+// moveWebfontsToDist Task
+const moveWebfontsToDist = () => {
+  return src(["src/webfonts/**"]).pipe(dest("dist/webfonts"));
 };
 
 // Browsersync Watch task
 // Watch HTML file for change and reload browsersync server
 // watch SCSS and JS files for changes, run scss and js tasks simultaneously and update browsersync
 const bsWatchTask = () => {
-  watch("src/index.html", browserSyncReload);
+  watch("src/*.html", browserSyncReload);
   watch(
     [files.scssPath.src, files.jsPath.src],
     { interval: 1000, usePolling: true }, //Makes docker work
-    series(parallel(scssTask, jsTask), cashbustTask, browserSyncReload)
+    series(
+      parallel(scssTask, jsTask),
+      moveHtmlToDist,
+      moveWebfontsToDist,
+      browserSyncReload
+    )
   );
 };
 
@@ -126,6 +144,11 @@ const imagesTask = () => {
     .pipe(dest(files.imgPath.dest));
 };
 
+// Clean dist task
+const cleanDist = () => {
+  return del(["dist/**/*"]);
+};
+
 // Watch Task
 const watchTask = () => {
   watch([files.scssPath.src, files.jsPath.src], parallel(scssTask, jsTask));
@@ -133,17 +156,24 @@ const watchTask = () => {
 
 // Default Task
 exports.default = series(
+  cleanDist,
   parallel(scssTask, jsTask),
-  cashbustTask,
+  moveHtmlToDist,
+  moveWebfontsToDist,
   imagesTask,
   webserverTask,
   watchTask
 );
 
+// Browsersync Task
 exports.bs = series(
+  cleanDist,
   parallel(scssTask, jsTask),
-  cashbustTask,
+  moveHtmlToDist,
+  moveWebfontsToDist,
   imagesTask,
   browserSyncServe,
   bsWatchTask
 );
+
+exports.clean = series(cleanDist);

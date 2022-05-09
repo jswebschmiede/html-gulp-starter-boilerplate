@@ -1,30 +1,9 @@
-$body-bg: #eee;
-$body-color: #333;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
-body {
-    background-color: $body-bg;
-    color: $body-color;
-    box-sizing: border-box;
-}
-
-img {
-    vertical-align: middle;
-}
-
-::placeholder {
-    color: gray;
-}
-
-.btn {
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(#333, 0.3);
-}
-
-.image {
-    background-image: url(image@1x.png);
-}
-@media (min-resolution: 2dppx) {
-    .image {
-        background-image: url(image@2x.png);
-    }
-}
+$fa-font-path: "../webfonts";
+@import "@fortawesome/fontawesome-free/scss/fontawesome.scss";
+@import "@fortawesome/fontawesome-free/scss/regular.scss";
+@import "@fortawesome/fontawesome-free/scss/solid.scss";
+@import "@fortawesome/fontawesome-free/scss/brands.scss";
